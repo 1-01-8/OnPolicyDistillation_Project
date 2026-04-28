@@ -1,4 +1,4 @@
-# OPD-Qwen3-1.7B 复现项目
+# OPD复现项目
 
 > **方法**：On-Policy Distillation（GKD/JSD），Qwen3-8B → Qwen3-1.7B，数据集 GSM8K
 > **硬件**：4×RTX A5000（24 GB），实际可用 GPU 0+2（GPU 3 长期被外部进程占用）
