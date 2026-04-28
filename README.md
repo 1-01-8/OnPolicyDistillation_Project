@@ -68,16 +68,15 @@ bash scripts/run_all.sh        # ~6 h
 
 > 关键发现：在已 instruct-tuned 的 student 上做 SFT 触发**灾难性遗忘**（−15 pt）；OPD 是唯一保留原能力的路径。
 
-### 4.2 Base student（**简历主线**）
+### 4.2 Base student（**简历主线 — 已完成**）
 
-| 模型 | GSM8K acc | 训练耗时 | FLOPs |
+| 模型 | GSM8K acc (n=1319) | 训练耗时 | 步数 |
 |---|---|---|---|
 | Qwen3-1.7B-Base baseline | **57.4%** (n=500) | — | — |
-| + SFT (1760 step) | *pending* (n=1319) | ~42 min | ~2.9e16 |
-| + **OPD (400 step, λ=0.5)** | **69.5%** quick (n=200) ＋full pending | ~3.7 h | ~8e15 |
+| + SFT | **67.6%** | ~1.7 h | 1760 |
+| + **OPD (λ=0.5)** | **70.9%** ✅ | ~3.5 h | **400** (提前停) |
 | Qwen3-8B teacher 上界 | 85.6% (n=500) | — | — |
 
-> 关键发现：OPD 在 Base student 上 **+12.1 pt 绝对提升 / +21% 相对提升**；
-> train loss 自 step 200 起在 0.10±0.005 平台震荡，step 400 已饱和，**提前停训** 体现 OPD 论文 "compute-efficient" 论点。
+> **关键发现：** OPD 用 **400 step（仅 22.7% of SFT 步数）** 反而比 SFT 高 **+3.3 pt**，且比 baseline +13.5 pt（+23.5%）。Train loss 自 step 200 起进入 0.10±0.005 平台，提前停训符合 OPD 论文 "compute-efficient" 论点。
 
-收尾流水：`bash scripts/finalize_base.sh`（OPD-400 full eval ‖ SFT-base 训练，~75 min）。
+图：`figs/summary_bar_base.png`、`figs/summary_combined.png`、`figs/compute_efficiency.png`
