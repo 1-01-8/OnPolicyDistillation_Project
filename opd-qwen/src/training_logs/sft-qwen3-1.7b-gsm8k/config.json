@@ -1,0 +1,10 @@
+{
+  "max_steps": 540,
+  "per_device_batch": 2,
+  "grad_accum": 4,
+  "max_length": 1024,
+  "output_dir": "runs/sft-qwen3-1.7b",
+  "run_name": "sft-qwen3-1.7b-gsm8k",
+  "no_wandb": false,
+  "attn": "sdpa"
+}

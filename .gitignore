@@ -1,0 +1,34 @@
+# --- 模型权重 / 大文件 / 运行时缓存（不上传） ---
+opd-qwen/.venv/
+opd-qwen/models/
+opd-qwen/hf_cache/
+opd-qwen/data/
+opd-qwen/wandb/
+
+# 训练 ckpt（包括主线 + ablation）
+opd-qwen/runs/**/checkpoint-*/
+opd-qwen/runs/**/final/
+opd-qwen/runs/abl/**/checkpoint-*/
+opd-qwen/runs/abl/**/final/
+
+# 权重二进制
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.gguf
+
+# 大日志（保留 eval/*.log 这些总结日志，排除冗长训练 stdout）
+opd-qwen/runs/sft_base_train.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+

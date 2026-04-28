@@ -1,0 +1,3 @@
+[finalize] 2026年  4月 28日 火曜日 13:42:14 JST — start
+[finalize] OPD ckpt-400 full eval PID=4119786 (GPU 0, ~30min)
+[finalize] SFT-base train PID=4120469 (GPU 2, ~42min)

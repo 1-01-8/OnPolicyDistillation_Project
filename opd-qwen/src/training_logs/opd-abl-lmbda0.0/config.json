@@ -1,0 +1,15 @@
+{
+  "lmbda": 0.0,
+  "beta": 0.5,
+  "temperature": 0.9,
+  "max_steps": 150,
+  "max_new_tokens": 256,
+  "per_device_batch": 2,
+  "grad_accum": 2,
+  "output_dir": "runs/abl/lmbda_0.0",
+  "run_name": "opd-abl-lmbda0.0",
+  "no_wandb": false,
+  "attn": "sdpa",
+  "teacher_bf16": false,
+  "teacher_bf16_split": false
+}

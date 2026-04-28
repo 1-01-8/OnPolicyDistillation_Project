@@ -1,0 +1,7 @@
+[watcher] PID 32902 exited at 2026年  4月 28日 火曜日 16:20:59 JST
+Final Acc: 0.676 (891/1319)  [samples 0–1318]
+Traceback (most recent call last):
+  File "/home/xxm/OnPolicyDistillation_Project/opd-qwen/src/plot_results.py", line 7, in <module>
+    import matplotlib.pyplot as plt
+ModuleNotFoundError: No module named 'matplotlib'
+[watcher] plot done at 2026年  4月 28日 火曜日 16:21:02 JST

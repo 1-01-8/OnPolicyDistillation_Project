@@ -1,0 +1,12 @@
+{
+  "max_steps": 1760,
+  "per_device_batch": 2,
+  "grad_accum": 4,
+  "max_length": 1024,
+  "student": "models/student-base",
+  "lr": 2e-05,
+  "output_dir": "runs/sft-qwen3-1.7b-base",
+  "run_name": "sft-qwen3-1.7b-base-gsm8k",
+  "no_wandb": false,
+  "attn": "sdpa"
+}
