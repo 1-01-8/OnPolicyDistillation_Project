@@ -85,19 +85,19 @@
 
 ### 2.1 一句话版（项目卡片标题）
 
-> **On-Policy Distillation 复现：Qwen3-8B → Qwen3-1.7B，GSM8K 上 OPD 70.9% vs compute-matched SFT 67.6%（仅用 27% 训练 FLOPs，+3.3 pt 绝对增益），并验证 OPD 在 instruction-tuned student 上防灾难性遗忘（SFT 60.7 vs OPD 75.7，+15 pt）。**
+> **复现《On-Policy Distillation》：Qwen3-8B → Qwen3-1.7B，GSM8K 上 OPD 70.9% vs compute-matched SFT 67.6%（绝对增益 +3.3 pt，仅用 27% 的训练 FLOPs）；并在 instruction-tuned student 上验证 OPD 抑制灾难性遗忘（SFT 60.7 vs OPD 75.7，+15 pt）。**
 
-### 2.2 Bullet-point 版（推荐，写在 Projects/Research 段）
+### 2.2 Bullet-point 版（推荐，写在 项目经历 / 科研经历 段）
 
-**On-Policy Distillation of Qwen3-8B → 1.7B on GSM8K** · TRL · PEFT · bitsandbytes · 2× RTX A5000
+**Qwen3-8B → 1.7B 在 GSM8K 上的 On-Policy Distillation 复现** · TRL · PEFT · bitsandbytes · 2× RTX A5000
 
-- Reproduced *On-Policy Distillation* (Thinking Machines, 2025) using TRL `GKDTrainer`; distilled Qwen3-8B (4-bit nf4 teacher) into Qwen3-1.7B-Base (LoRA r=64, JSD β=0.5) on GSM8K math reasoning.
-- **Achieved 70.9% test accuracy vs. 57.4% base / 67.6% compute-matched SFT**, delivering a **+13.5 pt** absolute lift while consuming only **27% of the SFT training FLOPs** (7.9e15 vs 2.9e16).
-- On the Instruct student, demonstrated OPD's robustness against catastrophic forgetting: **SFT collapsed accuracy from 75.4% → 60.7%, OPD preserved it at 75.7%**, providing a +15 pt signal for OPD's central claim.
-- Conducted λ ablation over `{0.0, 0.5, 1.0}` (off-policy → on-policy mix); observed a U-shape (75.6 / 73.4 / 75.8), evidencing warm-start necessity when student rollouts are weak — consistent with the original paper.
-- **Engineering wins**: located and fixed a Qwen3-specific bug where leftover `<think>` chat-template tokens caused **10× training slowdown (35 s → 159 s per step)**; resolved PEFT × `gradient_checkpointing` interaction (`use_reentrant=False` + `enable_input_require_grads()` on the wrapped PeftModel) that silently broke LoRA gradient flow.
-- Designed **compute-matched evaluation protocol** (FLOPs-equalized SFT baseline at 540 / 1760 steps) and reproducible pipeline: `run_all_base.sh` runs baseline eval → parallel OPD ‖ SFT training (GPU 0+2) → full GSM8K eval (n=1319) → 7-figure result plotting in ~10 h on a 2-GPU shared node.
-- Stack: `transformers 4.56 / trl 0.21 / peft 0.13 / bitsandbytes 0.49 / flash-attn 2.7`; reproducibility artifacts (eval logs, training metrics.jsonl, summary.json, figures, requirements.txt) committed to GitHub.
+- 基于 TRL `GKDTrainer` 复现 *On-Policy Distillation*（Thinking Machines, 2025），将 Qwen3-8B（4-bit nf4 teacher）蒸馏到 Qwen3-1.7B-Base（LoRA r=64, JSD β=0.5），任务为 GSM8K 数学推理。
+- **GSM8K 测试集准确率达到 70.9%**（baseline 57.4% / compute-matched SFT 67.6%），**绝对提升 +13.5 pt**，且**仅消耗 SFT 训练 FLOPs 的 27%**（7.9e15 vs 2.9e16），验证 OPD "compute-efficient" 论点。
+- 在 Instruct student 上验证 OPD 防灾难性遗忘的鲁棒性：**SFT 把准确率从 75.4% 砸到 60.7%，OPD 保持在 75.7%**，给出 +15 pt 信号支撑论文核心论点。
+- 完成 λ ∈ `{0.0, 0.5, 1.0}` 消融（off-policy → on-policy 混合比），观察到 75.6 / 73.4 / 75.8 的 U 型曲线，体现 student rollout 较弱时 warm-start 的必要性，与原论文一致。
+- **工程亮点**：定位并修复 Qwen3 特有 bug —— chat template 残留的 `<think>` token 导致**训练单步从 35 s 飙到 159 s（10× 降速）**；解决 PEFT × `gradient_checkpointing` 静默断梯度问题（`use_reentrant=False` + 必须在 wrap 后的 PeftModel 上调 `enable_input_require_grads()`）。
+- 设计 **compute-matched 对照协议**（按 FLOPs 等价匹配 SFT 步数 540 / 1760），构建端到端可复现流水线：`run_all_base.sh` 串起 baseline eval → OPD ‖ SFT 双卡并行训练 → 全量 1319 条 GSM8K 评测 → 7 张结果图自动出图，2-GPU 共享节点上 ~10 h 全跑完。
+- 技术栈：`transformers 4.56 / trl 0.21 / peft 0.13 / bitsandbytes 0.49 / flash-attn 2.7`；完整可复现产物（评测日志、训练 metrics.jsonl、summary.json、figs、requirements.txt）已提交至 GitHub。
 
 ### 2.3 数字摘录卡（面试随时能背）
 
