@@ -81,14 +81,3 @@ bash scripts/run_all.sh        # ~6 h
 > train loss 自 step 200 起在 0.10±0.005 平台震荡，step 400 已饱和，**提前停训** 体现 OPD 论文 "compute-efficient" 论点。
 
 收尾流水：`bash scripts/finalize_base.sh`（OPD-400 full eval ‖ SFT-base 训练，~75 min）。
-
-## 5. 引用
-
-```bibtex
-@inproceedings{agarwal2024on-policy,
-  title={On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes},
-  author={Agarwal, Rishabh and Vieillard, Nino and Zhou, Yongchao and others},
-  booktitle={ICLR 2024},
-  url={https://openreview.net/forum?id=3zKtaqxLhW}
-}
-```
