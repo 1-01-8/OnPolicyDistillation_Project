@@ -1,0 +1,4 @@
+nohup: 入力を無視します
+[gpu1] sft start 17:17:59
+`torch_dtype` is deprecated! Use `dtype` instead!
+dump[sft]:   0%|          | 0/1319 [00:00<?, ?it/s]dump[sft]:   0%|          | 1/1319 [00:27<9:56:27, 27.15s/it]dump[sft]:   3%|▎         | 33/1319 [00:54<30:38,  1.43s/it] dump[sft]:   5%|▍         | 65/1319 [01:23<23:11,  1.11s/it]
