@@ -80,3 +80,20 @@ bash scripts/run_all.sh        # ~6 h
 > **关键发现：** OPD 用 **400 step（仅 22.7% of SFT 步数）** 反而比 SFT 高 **+3.3 pt**，且比 baseline +13.5 pt（+23.5%）。Train loss 自 step 200 起进入 0.10±0.005 平台，提前停训符合 OPD 论文 "compute-efficient" 论点。
 
 图：`figs/summary_bar_base.png`、`figs/summary_combined.png`、`figs/compute_efficiency.png`
+
+### 4.3 CoT 行为分析（延伸 — 已完成）
+
+在 acc 之上进一步问"OPD 和 SFT 的提升机制是否相同？"。在 GSM8K test n=1319 上 dump 4 模型 CoT，6 维度量化。
+
+| tag | acc | tokens | steps | ROUGE-L vs teacher | self-BLEU |
+|---|---|---|---|---|---|
+| sft  | 67.4% | 508 | **47.2** | **0.107** | 0.069 |
+| opd  | **70.7%** | **271** | 18.2 | **0.516** | **0.441** |
+
+**4 个核心结论**：
+1. **风格对齐**：OPD 与 teacher 的 ROUGE-L 比 SFT 高 4.8×
+2. **推理压缩**：OPD CoT 长度只有 SFT 的 53%（更接近 teacher）
+3. **SFT 表面学习**：步数爆 teacher 2.7×，算式率 0.97 → 死记格式
+4. **策略稳定**：OPD 多次采样高度一致（self-BLEU 0.44 vs SFT 0.07）
+
+→ 详见 `opd-qwen/COT_PLAN.md` 与 `opd-qwen/RESULTS.md` §6
