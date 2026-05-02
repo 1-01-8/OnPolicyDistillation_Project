@@ -1,10 +1,10 @@
 # OPD复现项目
 
 > **方法**：On-Policy Distillation（GKD/JSD），Qwen3-8B → Qwen3-1.7B，数据集 GSM8K
-> **硬件**：4×RTX A5000（24 GB），实际可用 GPU 0+2（GPU 3 长期被外部进程占用）
+> **硬件**：2×RTX A5000（24 GB）
 > **栈**：TRL 0.21 + transformers 4.56 + peft 0.13 + bitsandbytes 0.49 + flash-attn 2.7 (disabled, 见下)
 >
-> 本仓库以"在受限 4 卡机的真实约束下复现 OPD"为目标，所有耗时 / 显存 / 关键 bug 都来自实测。
+> 本仓库以"在真实约束下复现 OPD"为目标，所有耗时 / 显存 / 关键 bug 都来自实测。
 
 ---
 
@@ -36,14 +36,13 @@ OnPolicyDistillation_Project/
 cd opd-qwen
 source .venv/bin/activate
 
-# 主线（推荐）：Base student → 头空间大，简历数字漂亮
-bash scripts/run_all_base.sh   # ~10 h
-
+# 主线（推荐）：Base student 
+bash scripts/run_all_base.sh   
 # 对照：Instruct student → 验证 OPD 防灾难性遗忘
-bash scripts/run_all.sh        # ~6 h
+bash scripts/run_all.sh       
 ```
 
-或拆开跑：见 `EXPERIMENT_PLAN.md`。
+<!-- 或拆开跑：见 `EXPERIMENT_PLAN.md`。
 
 ## 3. 关键修复（之前实验为什么不能用）
 
@@ -53,11 +52,11 @@ bash scripts/run_all.sh        # ~6 h
 | teacher_bf16_split 跨卡 | KV cache 跨 PCIe 慢 | 改回 4-bit nf4 单卡 teacher（默认） |
 | SFT/OPD 不等 FLOPs | OPD 8.66e15 vs SFT 4.93e15，对照不公平 | SFT 默认 `--max_steps 540` 配 OPD 300 step |
 | Instruct student 头空间太小 | baseline 75% / OPD 75.7%，看不出 OPD 价值 | 加 base student 主线（`scripts/{40,50,51,60}_*.sh`） |
-| README 是 trl 自动占位符 | "fine-tuned version of None" | 此文件 + EXPERIMENT_PLAN.md 替代 |
+| README 是 trl 自动占位符 | "fine-tuned version of None" | 此文件 + EXPERIMENT_PLAN.md 替代 | -->
 
-## 4. 主要结果
+## 3. 主要结果
 
-### 4.1 Instruct student（已完成 — OPD 鲁棒性卖点）
+### 3.1 Instruct student（已完成 — OPD 鲁棒性卖点）
 
 | 模型 | GSM8K acc (n=1319) | 训练耗时 | FLOPs |
 |---|---|---|---|
@@ -68,7 +67,7 @@ bash scripts/run_all.sh        # ~6 h
 
 > 关键发现：在已 instruct-tuned 的 student 上做 SFT 触发**灾难性遗忘**（−15 pt）；OPD 是唯一保留原能力的路径。
 
-### 4.2 Base student（**简历主线 — 已完成**）
+### 3.2 Base student（**简历主线 — 已完成**）
 
 | 模型 | GSM8K acc (n=1319) | 训练耗时 | 步数 |
 |---|---|---|---|
@@ -81,7 +80,7 @@ bash scripts/run_all.sh        # ~6 h
 
 图：`figs/summary_bar_base.png`、`figs/summary_combined.png`、`figs/compute_efficiency.png`
 
-### 4.3 CoT 行为分析（延伸 — 已完成）
+### 3.3 CoT 行为分析（延伸 — 已完成）
 
 在 acc 之上进一步问 **"OPD 和 SFT 的提升机制是否相同？"**。在 GSM8K test n=1319 上 dump 5 个模型的 CoT，ROUGE-L 参考为 **真 Qwen3-8B teacher**。
 
