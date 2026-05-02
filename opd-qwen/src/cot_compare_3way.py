@@ -13,15 +13,48 @@ FIGS = os.path.join(ROOT, "figs")
 os.makedirs(FIGS, exist_ok=True)
 
 LABELS = {
-    "base": "Qwen3-1.7B-Base (student init)",
-    "instruct1p7b": "Qwen3-1.7B (student-instruct baseline)",
+    "base": "Qwen3-1.7B-Base",
+    "instruct1p7b": "Qwen3-1.7B (Instruct)",
+    "instruct_sft": "Qwen3-1.7B-Instruct + SFT",
+    "instruct_opd": "Qwen3-1.7B-Instruct + OPD",
     "sft": "Qwen3-1.7B-Base + SFT",
     "opd": "Qwen3-1.7B-Base + OPD",
+    "sft_then_opd": "Qwen3-1.7B-Base + SFT→OPD",
     "teacher": "Qwen3-8B (Teacher)",
 }
-COLORS = {"base": "#bbbbbb", "instruct1p7b": "#888888",
-          "sft": "#e76f51", "opd": "#2a9d8f", "teacher": "#264653"}
-ORDER = ["sft", "opd", "teacher"]
+COLORS = {
+    "base": "#bbbbbb", "instruct1p7b": "#888888",
+    "instruct_sft": "#f4a261", "instruct_opd": "#a8dadc",
+    "sft": "#e76f51", "opd": "#2a9d8f",
+    "sft_then_opd": "#9b5de5",
+    "teacher": "#264653",
+}
+DEFAULT_ORDER_FULL = [
+    "base", "instruct1p7b",
+    "instruct_sft", "instruct_opd",
+    "sft", "opd", "sft_then_opd",
+    "teacher",
+]
+DEFAULT_ORDER_BASE = ["base", "sft", "opd", "sft_then_opd", "teacher"]
+DEFAULT_ORDER_3 = ["sft", "opd", "teacher"]
+
+
+def _resolve_order():
+    import os as _os
+    mode = _os.environ.get("COT_ORDER", "auto")
+    if mode == "3way":
+        return DEFAULT_ORDER_3, "3way"
+    if mode == "base":
+        return DEFAULT_ORDER_BASE, "base"
+    if mode == "full":
+        return DEFAULT_ORDER_FULL, "full"
+    # auto: include any tag whose jsonl exists
+    present = [t for t in DEFAULT_ORDER_FULL
+               if _os.path.exists(_os.path.join(COT, f"{t}.jsonl"))]
+    return present, "auto"
+
+
+ORDER, ORDER_MODE = _resolve_order()
 
 
 def n_steps(text):
@@ -80,8 +113,12 @@ def main():
                           mean_tokens=float(np.mean(toks)),
                           mean_steps=float(np.mean(steps)))
 
+    suffix = ORDER_MODE  # auto / 3way / base / full
+    n_models = len(ORDER)
+    fig_w = max(8, 2.0 * n_models)
+
     # ---- Figure 1: bar group (acc / mean_tokens / mean_steps / equation_rate) ----
-    fig, axes = plt.subplots(1, 4, figsize=(15, 4))
+    fig, axes = plt.subplots(1, 4, figsize=(fig_w, 4.5))
     metric_keys = [("acc", "Accuracy", 1), ("mean_tokens", "Avg CoT tokens", 1),
                    ("mean_steps", "Avg # reasoning steps", 1),
                    ("eq", "Equation-format rate (<<a×b=c>>)", 1)]
@@ -93,11 +130,11 @@ def main():
         for b, v in zip(bars, vals):
             ax.text(b.get_x() + b.get_width() / 2, v, f"{v:.2f}" if v < 10 else f"{v:.0f}",
                     ha="center", va="bottom", fontsize=9)
-        ax.tick_params(axis="x", labelrotation=15)
+        ax.tick_params(axis="x", labelrotation=25)
         ax.grid(axis="y", alpha=0.3)
-    plt.suptitle("CoT comparison: SFT vs OPD vs Teacher (GSM8K test, n=1319)", y=1.02)
+    plt.suptitle(f"CoT comparison ({suffix}, GSM8K test n=1319)", y=1.02)
     plt.tight_layout()
-    plt.savefig(os.path.join(FIGS, "cot_3way_bars.png"), dpi=120, bbox_inches="tight")
+    plt.savefig(os.path.join(FIGS, f"cot_{suffix}_bars.png"), dpi=120, bbox_inches="tight")
     plt.close()
 
     # ---- Figure 2: distribution (tokens + steps) ----
@@ -114,24 +151,25 @@ def main():
     axes[1].set_xlabel("# reasoning steps"); axes[1].set_ylabel("count")
     axes[1].set_title("Reasoning step count distribution"); axes[1].legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(FIGS, "cot_3way_dist.png"), dpi=120, bbox_inches="tight")
+    plt.savefig(os.path.join(FIGS, f"cot_{suffix}_dist.png"), dpi=120, bbox_inches="tight")
     plt.close()
 
-    # ---- Figure 3: ROUGE-L vs teacher (sft vs opd only) ----
-    fig, ax = plt.subplots(figsize=(6, 4))
+    # ---- Figure 3: ROUGE-L vs teacher (students only) ----
+    fig, ax = plt.subplots(figsize=(max(6, 1.6 * (n_models - 1)), 4.5))
     students = [t for t in ORDER if t != "teacher"]
     vals = [stats[t]["rouge"] for t in students]
     bars = ax.bar([LABELS[t] for t in students], vals,
                   color=[COLORS[t] for t in students])
     ax.set_ylabel("ROUGE-L vs Qwen3-8B Teacher CoT")
     ax.set_title("CoT style similarity to Qwen3-8B Teacher")
-    ax.set_ylim(0, max(vals) * 1.25)
+    ax.set_ylim(0, max(vals) * 1.25 if max(vals) > 0 else 1)
     for b, v in zip(bars, vals):
         ax.text(b.get_x() + b.get_width() / 2, v, f"{v:.3f}",
                 ha="center", va="bottom", fontsize=10)
+    ax.tick_params(axis="x", labelrotation=25)
     ax.grid(axis="y", alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(FIGS, "cot_3way_rouge.png"), dpi=120, bbox_inches="tight")
+    plt.savefig(os.path.join(FIGS, f"cot_{suffix}_rouge.png"), dpi=120, bbox_inches="tight")
     plt.close()
 
     # ---- summary table ----
@@ -143,11 +181,11 @@ def main():
         r = f"{s['rouge']:.3f}" if s["rouge"] is not None else "  -- "
         print(f"{LABELS[t]:<35} {s['acc']:>7.3f} {s['mean_tokens']:>8.1f} "
               f"{s['mean_steps']:>7.1f} {s['eq']:>8.3f} {r:>9}")
-    print(f"\n→ figs/cot_3way_bars.png  cot_3way_dist.png  cot_3way_rouge.png")
+    print(f"\n→ figs/cot_{suffix}_bars.png  cot_{suffix}_dist.png  cot_{suffix}_rouge.png")
 
     # save csv
     import csv
-    with open(os.path.join(COT, "metrics_3way.csv"), "w") as f:
+    with open(os.path.join(COT, f"metrics_{suffix}.csv"), "w") as f:
         w = csv.writer(f)
         w.writerow(["model", "acc", "avg_tokens", "avg_steps", "eq_rate", "rouge_L_vs_teacher"])
         for t in ORDER:

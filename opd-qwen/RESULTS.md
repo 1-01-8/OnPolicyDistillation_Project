@@ -125,3 +125,26 @@ python src/cot_compare_3way.py
 - `figs/cot_3way_rouge.png`：ROUGE-L vs Qwen3-8B teacher
 - `figs/cot_length_dist.png` / `cot_acc_by_length.png` / `cot_similarity.png`：全模型对比
 - `COT_PLAN.md`: 实验方案 + 4 个 hypothesis 设计
+
+<!-- AUTO_SFT_THEN_OPD -->
+## §6.5  SFT→OPD 两阶段实验（auto-generated）
+
+在 1.7B-Base+SFT (LoRA, 已合并) 之上**再训一阶段 OPD**，与主线 1.7B-Base+OPD 完全同条件 (λ=0.5, β=0.5, T=0.9, max_steps=400, lr=2e-5)。
+
+### 7-way 全量结果
+
+| model | acc | tokens | steps | eq_rate | ROUGE-L |
+|---|---|---|---|---|---|
+| Qwen3-1.7B-Base | 0.533 | 195.9 | 14.4 | 0.0 | 0.245 |
+| Qwen3-1.7B (Instruct) | 0.7468 | 495.4 | 17.2 | 0.0 | 0.514 |
+| Qwen3-1.7B-Instruct + SFT | 0.6103 | 404.5 | 5.1 | 0.97 | 0.177 |
+| Qwen3-1.7B-Instruct + OPD | 0.7544 | 502.0 | 17.4 | 0.0 | 0.536 |
+| Qwen3-1.7B-Base + SFT | 0.674 | 507.8 | 53.0 | 0.986 | 0.109 |
+| Qwen3-1.7B-Base + OPD | 0.7074 | 270.6 | 18.2 | 0.0 | 0.534 |
+| Qwen3-1.7B-Base + SFT→OPD | 0.7134 | 269.0 | 18.0 | 0.0 | 0.539 |
+| Qwen3-8B (Teacher) | 0.8332 | 453.3 | 17.1 | 0.0 |  |
+
+**关键观察**：见上表 `Qwen3-1.7B-Base + SFT→OPD` 一行 vs `+ OPD` / `+ SFT`：
+- 若 acc > 70.7% → SFT-warmup 对 OPD 有正面增益；
+- 若 ROUGE-L > 0.534 且 eq_rate 显著回升 → SFT 学到的表面格式被 OPD 部分保留；
+- 若 acc ≤ 70.7% 且 eq_rate=0 → OPD 阶段把 SFT 的 surface fitting 完全洗掉，先 SFT 再 OPD 等价于直接 OPD。

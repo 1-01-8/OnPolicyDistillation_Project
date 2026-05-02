@@ -100,3 +100,8 @@ bash scripts/run_all.sh
 图：`opd-qwen/figs/cot_3way_bars.png` / `cot_3way_dist.png` / `cot_3way_rouge.png`
 
 → 详见 `opd-qwen/COT_PLAN.md` 与 `opd-qwen/RESULTS.md` §6
+
+<!-- AUTO_SFT_THEN_OPD -->
+### 4.3.1 SFT→OPD 两阶段实验（自动追加）
+
+完整 7-way CoT 分析见 `opd-qwen/figs/cot_auto_*.png` 和 `RESULTS.md §6.5`。

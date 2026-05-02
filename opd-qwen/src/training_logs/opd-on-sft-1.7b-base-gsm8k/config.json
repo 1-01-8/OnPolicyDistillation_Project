@@ -1,0 +1,17 @@
+{
+  "lmbda": 0.5,
+  "beta": 0.5,
+  "temperature": 0.9,
+  "max_steps": 1000,
+  "max_new_tokens": 256,
+  "per_device_batch": 2,
+  "grad_accum": 4,
+  "output_dir": "runs/opd-on-sft-1.7b-base",
+  "run_name": "opd-on-sft-1.7b-base-gsm8k",
+  "no_wandb": false,
+  "attn": "sdpa",
+  "student": "models/student-base-sft-merged",
+  "lr": 2e-05,
+  "teacher_bf16": false,
+  "teacher_bf16_split": false
+}
