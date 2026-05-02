@@ -83,17 +83,21 @@ bash scripts/run_all.sh        # ~6 h
 
 ### 4.3 CoT 行为分析（延伸 — 已完成）
 
-在 acc 之上进一步问"OPD 和 SFT 的提升机制是否相同？"。在 GSM8K test n=1319 上 dump 4 模型 CoT，6 维度量化。
+在 acc 之上进一步问 **"OPD 和 SFT 的提升机制是否相同？"**。在 GSM8K test n=1319 上 dump 5 个模型的 CoT，ROUGE-L 参考为 **真 Qwen3-8B teacher**。
 
-| tag | acc | tokens | steps | ROUGE-L vs teacher | self-BLEU |
-|---|---|---|---|---|---|
-| sft  | 67.4% | 508 | **47.2** | **0.107** | 0.069 |
-| opd  | **70.7%** | **271** | 18.2 | **0.516** | **0.441** |
+| 模型 | acc | tokens | steps | ROUGE-L vs Qwen3-8B Teacher | self-BLEU | `<<eq>>` 率 |
+|---|---|---|---|---|---|---|
+| Qwen3-1.7B-Base + SFT  | 67.4% | 508 | **47.2** | **0.109** | 0.069 | **98.6%** |
+| Qwen3-1.7B-Base + OPD  | **70.7%** | **271** | 18.2 | **0.534** | **0.441** | 0% |
+| Qwen3-1.7B (instruct, baseline 学生) | 74.7% | 495 | 17.2 | 0.514 | – | 0% |
+| **Qwen3-8B (Teacher)** | 83.3% | 453 | 17.1 | – | – | 0% |
 
-**4 个核心结论**：
-1. **风格对齐**：OPD 与 teacher 的 ROUGE-L 比 SFT 高 4.8×
-2. **推理压缩**：OPD CoT 长度只有 SFT 的 53%（更接近 teacher）
-3. **SFT 表面学习**：步数爆 teacher 2.7×，算式率 0.97 → 死记格式
-4. **策略稳定**：OPD 多次采样高度一致（self-BLEU 0.44 vs SFT 0.07）
+**4 个核心发现**：
+1. **风格对齐**：OPD ROUGE-L (0.534) **反超同体量 Qwen3-1.7B Instruct 学生 (0.514)**，比 SFT (0.109) 高 4.9×
+2. **推理压缩**：OPD CoT 长度仅 271 (teacher 60%)，**步数 18.2 ≈ teacher 17.1**；SFT 反而 508 tokens / 47.2 步（爆 teacher 2.8×）
+3. **SFT 表面学习实锤**：SFT 输出 **98.6%** 含 GSM8K 训练集特有的 `<<a×b=c>>` 格式标记，OPD/teacher/instruct 均为 0%
+4. **策略稳定**：OPD 多次采样 self-BLEU 0.44 vs SFT 0.07 — OPD 收敛到稳定推理策略
+
+图：`opd-qwen/figs/cot_3way_bars.png` / `cot_3way_dist.png` / `cot_3way_rouge.png`
 
 → 详见 `opd-qwen/COT_PLAN.md` 与 `opd-qwen/RESULTS.md` §6

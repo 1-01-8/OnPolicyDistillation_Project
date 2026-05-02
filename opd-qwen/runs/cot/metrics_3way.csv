@@ -1,0 +1,4 @@
+model,acc,avg_tokens,avg_steps,eq_rate,rouge_L_vs_teacher
+Qwen3-1.7B-Base + SFT,0.674,507.8,53.0,0.986,0.109
+Qwen3-1.7B-Base + OPD,0.7074,270.6,18.2,0.0,0.534
+Qwen3-8B (Teacher),0.8332,453.3,17.1,0.0,

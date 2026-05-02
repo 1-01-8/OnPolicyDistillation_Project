@@ -53,23 +53,27 @@
 
 ## 2. 实测结果（n=1319 GSM8K test，已完成）
 
-| tag | acc | tokens | steps | ROUGE-L vs teacher | self-BLEU | arith_eq |
+ROUGE-L 参考为 **Qwen3-8B teacher** 的 CoT。
+
+| 模型 | acc | tokens | steps | ROUGE-L vs Teacher | self-BLEU | `<<eq>>` 率 |
 |---|---|---|---|---|---|---|
-| base | 53.3% | 196 | 14.0 | 0.237 | – | 0.42 |
-| **instruct (teacher)** | 74.7% | 495 | 17.2 | – | – | 0.65 |
-| **sft** | 67.4% | 508 | **47.2** | **0.107** | – | **0.97** |
-| **opd** | **70.7%** | **271** | 18.2 | **0.516** | – | 0.66 |
-| sft_sample (5×200) | 62.1% | 510 | 42.2 | 0.107 | 0.069 | 0.99 |
-| opd_sample (5×200) | 70.3% | 267 | 17.7 | 0.472 | **0.441** | 0.63 |
+| Qwen3-1.7B-Base | 53.3% | 196 | 14.0 | 0.245 | – | 0% |
+| Qwen3-1.7B (instruct) | 74.7% | 495 | 17.2 | 0.514 | – | 0% |
+| **Qwen3-1.7B-Base + SFT** | 67.4% | 508 | **47.2** | **0.109** | – | **98.6%** |
+| **Qwen3-1.7B-Base + OPD** | **70.7%** | **271** | 18.2 | **0.534** | – | 0% |
+| **Qwen3-8B (Teacher)** | **83.3%** | 453 | 17.1 | – | – | 0% |
+| sft_sample (5×200) | 62.1% | 510 | 42.2 | 0.109 | 0.069 | 98.5% |
+| opd_sample (5×200) | 70.3% | 267 | 17.7 | 0.500 | **0.441** | 0% |
 
-**实际结果落在"模式 A++"** —— 4 个 hypothesis 全部成立：
+**实际结果落在"模式 A++"** —— 4 个 hypothesis 全部成立，且强度超预期：
 
-1. **H1 (CoT 风格对齐)** ✅ OPD ROUGE-L = 0.516 vs SFT 0.107（差 4.8×）
-2. **H2 (推理压缩)** ✅ OPD 271 tokens（teacher 的 55%），SFT 反而 508 tokens（爆 teacher）
-3. **H3 (SFT 表面学习)** ✅ SFT 步数 47.2 vs teacher 17.2（爆 2.7×），算式率 0.97 vs 0.65 → 死记格式
-4. **H4 (策略稳定性)** ✅ OPD 5 次采样 self-BLEU = 0.441（高一致性），SFT = 0.069（极发散）
+1. **H1 (CoT 风格对齐)** ✅ **OPD 反超同体量 Instruct 学生**
+   OPD ROUGE-L = 0.534 > 1.7B-Instruct 0.514 > SFT 0.109（OPD 比 SFT 高 4.9×）
+2. **H2 (推理压缩)** ✅ OPD 271 tokens（teacher 60%），SFT 508（爆 teacher）；步数 OPD 18.2 ≈ teacher 17.1
+3. **H3 (SFT 表面学习)** ✅ SFT 98.6% 输出含 GSM8K 训练集特有的 `<<a×b=c>>` 格式；OPD/teacher/instruct 全 0%
+4. **H4 (策略稳定性)** ✅ OPD 5 次采样 self-BLEU 0.441（一致），SFT 0.069（发散）
 
-**核心叙事**：on-policy 让 student 在自己的轨迹上对齐 teacher 分布，最终学到 teacher 的**逻辑结构**而非 token 序列；SFT 强行教师强制走 teacher 路径，学到的是**算式表面**。
+**核心叙事**：on-policy 让 student 在自己的轨迹上对齐 teacher 分布，最终学到 teacher 的**逻辑结构**（步数、长度节奏完全对齐）；SFT 强行教师强制走 teacher 路径，学到的是**算式表面格式**。
 
 详细分析见 `RESULTS.md` §6。
 
