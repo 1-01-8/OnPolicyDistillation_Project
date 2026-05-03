@@ -54,54 +54,97 @@ bash scripts/run_all.sh
 | Instruct student 头空间太小 | baseline 75% / OPD 75.7%，看不出 OPD 价值 | 加 base student 主线（`scripts/{40,50,51,60}_*.sh`） |
 | README 是 trl 自动占位符 | "fine-tuned version of None" | 此文件 + EXPERIMENT_PLAN.md 替代 | -->
 
+
 ## 3. 主要结果
 
-### 3.1 Instruct student（已完成 — OPD 鲁棒性卖点）
+### 3.1 Base student 完整对照（**简历主线**）
 
-| 模型 | GSM8K acc (n=1319) | 训练耗时 | FLOPs |
-|---|---|---|---|
-| Qwen3-1.7B-Instruct baseline | **75.4%** (n=500) | — | — |
-| + SFT (540 step) | **60.7%** ⚠️ | 13 min | 8.9e15 |
-| + OPD (300 step, λ=0.5) | **75.7%** | 2.79 h | 5.9e15 |
-| Qwen3-8B teacher 上界 | **85.6%** (n=500) | — | — |
+n=1319 GSM8K test，full eval；ROUGE-L 参考 **真 Qwen3-8B teacher**。
 
-> 关键发现：在已 instruct-tuned 的 student 上做 SFT 触发**灾难性遗忘**（−15 pt）；OPD 是唯一保留原能力的路径。
+| 模型 | GSM8K acc | tokens | steps | `<<eq>>`率 | ROUGE-L vs Teacher |
+|---|---|---|---|---|---|
+| Qwen3-8B Teacher                 | **83.3%** | 453 | 17.1 | 0%      | —     |
+| Qwen3-1.7B-Base (baseline)       | 53.3%     | 196 | 14.0 | 0%      | 0.245 |
+| Qwen3-1.7B-Base + SFT            | 67.4%     | 508 | 47.2 | **98.6%** ⚠️ | 0.109 |
+| Qwen3-1.7B-Base + OPD            | 70.7%     | 271 | 18.2 | 0%      | 0.534 |
+| **Qwen3-1.7B-Base + SFT→OPD**    | **71.3%** ⭐ | 269 | 18.0 | 0%      | **0.539** |
 
-### 3.2 Base student（**简历主线 — 已完成**）
+> **核心发现**：
+> 1. **OPD 用 400 step（SFT 的 22.7%）反超 SFT +3.3 pt**，符合 OPD 论文 "compute-efficient" 论点。
+> 2. **SFT 学到的是表面格式**：98.6% 输出含 GSM8K 训练集特有的 `<<a*b=c>>` 标记（teacher 不写）；ROUGE-L vs teacher 仅 0.109。
+> 3. **OPD 学到的是语义**：ROUGE-L 0.534（5× SFT），CoT 长度 / 步数与 teacher 几乎一致。
+> 4. **SFT→OPD 两阶段最佳**：71.3% 反超纯 OPD +0.6 pt；OPD 阶段把 SFT 留下的 98.6% `<<eq>>` **完全洗掉**。
 
-| 模型 | GSM8K acc (n=1319) | 训练耗时 | 步数 |
-|---|---|---|---|
-| Qwen3-1.7B-Base baseline | **57.4%** (n=500) | — | — |
-| + SFT | **67.6%** | ~1.7 h | 1760 |
-| + **OPD (λ=0.5)** | **70.9%** ✅ | ~3.5 h | **400** (提前停) |
-| Qwen3-8B teacher 上界 | 85.6% (n=500) | — | — |
+### 3.2 Instruct student 对照（OPD 防灾难性遗忘）
 
-> **关键发现：** OPD 用 **400 step（仅 22.7% of SFT 步数）** 反而比 SFT 高 **+3.3 pt**，且比 baseline +13.5 pt（+23.5%）。Train loss 自 step 200 起进入 0.10±0.005 平台，提前停训符合 OPD 论文 "compute-efficient" 论点。
+| 模型 | GSM8K acc (n=1319) |
+|---|---|
+| Qwen3-1.7B-Instruct (baseline)  | 74.7% |
+| + SFT                            | **60.7%** ⚠️ 灾难性遗忘 −14 pt |
+| + OPD                            | 75.4% (无遗忘) |
 
-图：`figs/summary_bar_base.png`、`figs/summary_combined.png`、`figs/compute_efficiency.png`
+→ 已 instruct-tuned 的 student 被 GT-style SFT 覆盖后能力下降；OPD 因目标分布是 teacher 而非 GT，不触发遗忘。
 
-### 3.3 CoT 行为分析（延伸 — 已完成）
+### 3.3 训练超参（与论文对齐）
 
-在 acc 之上进一步问 **"OPD 和 SFT 的提升机制是否相同？"**。在 GSM8K test n=1319 上 dump 5 个模型的 CoT，ROUGE-L 参考为 **真 Qwen3-8B teacher**。
+| 项 | 值 |
+|---|---|
+| Teacher | Qwen3-8B (bnb 4-bit NF4, ~6 GB) |
+| Student | Qwen3-1.7B-Base/Instruct (bf16 + LoRA r=64, α=128) |
+| OPD: λ / β / T | 0.5 / 0.5 (JSD) / 0.9 |
+| lr / batch | 2e-5 / per_device 2 × grad_accum 4 = 8 |
+| max_new_tokens | 256 |
+| max_steps (real ckpt) | 1000 启动 / 取 ckpt-400 |
+| GPU | 1× A5000 24 GB（teacher 4-bit + student LoRA 共 ~16 GB） |
+| 训练耗时 (400 step) | ~3.5 h，35 s/step |
 
-| 模型 | acc | tokens | steps | ROUGE-L vs Qwen3-8B Teacher | self-BLEU | `<<eq>>` 率 |
-|---|---|---|---|---|---|---|
-| Qwen3-1.7B-Base + SFT  | 67.4% | 508 | **47.2** | **0.109** | 0.069 | **98.6%** |
-| Qwen3-1.7B-Base + OPD  | **70.7%** | **271** | 18.2 | **0.534** | **0.441** | 0% |
-| Qwen3-1.7B (instruct, baseline 学生) | 74.7% | 495 | 17.2 | 0.514 | – | 0% |
-| **Qwen3-8B (Teacher)** | 83.3% | 453 | 17.1 | – | – | 0% |
+### 3.4 关键工程优化
 
-**4 个核心发现**：
-1. **风格对齐**：OPD ROUGE-L (0.534) **反超同体量 Qwen3-1.7B Instruct 学生 (0.514)**，比 SFT (0.109) 高 4.9×
-2. **推理压缩**：OPD CoT 长度仅 271 (teacher 60%)，**步数 18.2 ≈ teacher 17.1**；SFT 反而 508 tokens / 47.2 步（爆 teacher 2.8×）
-3. **SFT 表面学习实锤**：SFT 输出 **98.6%** 含 GSM8K 训练集特有的 `<<a×b=c>>` 格式标记，OPD/teacher/instruct 均为 0%
-4. **策略稳定**：OPD 多次采样 self-BLEU 0.44 vs SFT 0.07 — OPD 收敛到稳定推理策略
+| 问题 | 解决方案 | 效果 |
+|---|---|---|
+| Qwen3 chat_template 默认开 `<think>` | 全局 patch tokenizer.apply_chat_template，强制 `enable_thinking=False` | 单步 159s → 35s（**4.5× 加速**） |
+| `dump_cot.py` 串行采 N 次 | 改用 `num_return_sequences=N` 一次出 | 评测 **4× 加速** |
+| 主线 OPD 用 max_steps=1000 但只取 ckpt-400 | SFT→OPD 续训用同 max_steps + watcher 触发 ckpt-400 SIGINT 自动停 | lr scheduler 严格对齐 |
+| TRL `GKDTrainer` 把 `device_map={"":1}` 拉回卡 0 | 接受单卡训练（teacher 4-bit + student LoRA 共占 16 GB，足够） | — |
 
-图：`opd-qwen/figs/cot_3way_bars.png` / `cot_3way_dist.png` / `cot_3way_rouge.png`
+### 3.5 5-way 对比图
 
-→ 详见 `opd-qwen/COT_PLAN.md` 与 `opd-qwen/RESULTS.md` §6
+![5-way CoT 对比](opd-qwen/figs/cot_5way_combined.png)
 
-<!-- AUTO_SFT_THEN_OPD -->
-### 4.3.1 SFT→OPD 两阶段实验（自动追加）
+更多图：
+- `opd-qwen/figs/cot_5way_acc.png`（acc 单图）
+- `opd-qwen/figs/cot_5way_format_vs_semantic.png`（`<<eq>>` 率 vs ROUGE-L）
 
-完整 7-way CoT 分析见 `opd-qwen/figs/cot_auto_*.png` 和 `RESULTS.md §6.5`。
+### 3.6 实验产物索引
+
+| 类型 | 路径 |
+|---|---|
+| 数值表 (CSV) | `opd-qwen/runs/cot/metrics_5way.csv`、`metrics_auto.csv` |
+| 全量 eval 日志 | `opd-qwen/runs/eval/*.log` |
+| 训练 LoRA ckpt | `opd-qwen/runs/{sft,opd,opd-on-sft}-qwen3-1.7b-base/` |
+| CoT dump (1319×8 模型) | `opd-qwen/runs/cot/{base,sft,opd,sft_then_opd,instruct1p7b,instruct_sft,instruct_opd,teacher}.jsonl` |
+| **面试讲述脚本** | `opd-qwen/INTERVIEW_GUIDE.md` |
+| 教学版 CoT 指标脚本 | `opd-qwen/src/cot_metrics_annotated.py` |
+| 5-way 出图脚本 | `opd-qwen/src/cot_compare_5way.py` |
+| 完整文档 | `opd-qwen/RESULTS.md`、`opd-qwen/COT_PLAN.md` |
+
+### 3.7 复现步骤（一键到底）
+
+```bash
+cd opd-qwen
+# 1) SFT (baseline 路线)
+bash scripts/40_train_sft_base.sh                # ~1.7 h
+# 2) OPD 主线（max_steps=1000, 取 ckpt-400）
+bash scripts/50_train_opd_base.sh                # ~3.5 h
+# 3) SFT→OPD 两阶段（merge SFT-LoRA 后再跑 OPD）
+python src/merge_lora.py --base models/student-base \
+    --lora runs/sft-qwen3-1.7b-base/final \
+    --out  models/student-base-sft-merged
+bash scripts/52_train_opd_on_sft.sh              # ~3.5 h
+# 4) Full eval (n=1319)
+python src/eval_gsm8k.py --lora runs/opd-on-sft-1.7b-base/checkpoint-400 ...
+# 5) CoT dump + 出图
+python src/dump_cot.py  --tag sft_then_opd ...
+python src/cot_metrics_annotated.py
+python src/cot_compare_5way.py
+```
