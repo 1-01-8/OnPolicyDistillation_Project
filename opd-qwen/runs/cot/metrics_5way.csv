@@ -1,0 +1,6 @@
+model,acc,avg_tokens,avg_steps,eq_rate,rouge_L_vs_teacher
+Qwen3-8B Teacher,0.8332,144.7,17.1,0.0,
+Qwen3-1.7B-Base (no train),0.533,115.3,14.4,0.0,0.245
++ SFT (off-policy),0.674,206.5,53.0,0.985,0.109
++ OPD (on-policy),0.7074,148.2,18.2,0.0,0.534
++ SFT→OPD (two-stage),0.7134,147.1,18.0,0.0,0.539

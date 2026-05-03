@@ -1,18 +1,27 @@
 """Dump 每个模型在 GSM8K test 子集上的 CoT 输出（含元数据）到 jsonl。
 
-输出 schema:
-  {idx, question, gt_answer, gt_cot, pred_text, pred_answer, correct,
-   gen_tokens, prompt_tokens, gen_time}
+【作用】对一个学生/teacher 模型，在 GSM8K test 上批量推理，把每条 CoT 文本
+和评测元数据保存为 jsonl，供 cot_metrics.py / cot_compare_5way.py 离线分析。
+
+【关键设计】
+1) Qwen3 chat_template 默认会插入 `<think>` 段（thinking-mode），单步会从 35s 暴涨到 159s；
+   `enable_thinking=False` 必须显式关闭，否则 1319 条要跑数小时。
+2) 真并行：用 num_return_sequences=n_samples 一次性出 n 条 sample，比 for-loop 串行快 n×。
+   配 (bsz, nrs) 索引：[b0_s0, b0_s1, b1_s0, b1_s1, ...]。
+3) extract_answer：先抓 GSM8K 标准 "#### 72" 末位，没有再退回"最后一个数字"。
+
+输出 schema (每行)：
+  {idx, sample, question, gt_answer, gt_cot, pred_text, pred_answer,
+   correct, gen_tokens, prompt_tokens, gen_time, tag}
 
 用法:
   CUDA_VISIBLE_DEVICES=0 python src/dump_cot.py \
       --model models/student-base \
       --lora runs/opd-qwen3-1.7b-base/checkpoint-400 \
-      --n 500 --batch_size 16 \
-      --tag opd_base \
-      --out runs/cot/opd_base.jsonl
-  # 多次采样（diversity 用）：
-  python src/dump_cot.py ... --n_samples 5 --temperature 0.7 --top_p 0.95
+      --n -1 --batch_size 32 \
+      --tag opd \
+      --out runs/cot/opd.jsonl
+  # 多次采样（diversity）：--n_samples 5 --temperature 0.7 --top_p 0.95
 """
 import argparse, json, os, re, time
 import torch
