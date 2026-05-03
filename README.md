@@ -107,15 +107,8 @@ n=1319 GSM8K test，full eval；ROUGE-L 参考 **真 Qwen3-8B teacher**。
 | 主线 OPD 用 max_steps=1000 但只取 ckpt-400 | SFT→OPD 续训用同 max_steps + watcher 触发 ckpt-400 SIGINT 自动停 | lr scheduler 严格对齐 |
 | TRL `GKDTrainer` 把 `device_map={"":1}` 拉回卡 0 | 接受单卡训练（teacher 4-bit + student LoRA 共占 16 GB，足够） | — |
 
-### 3.5 5-way 对比图
 
-![5-way CoT 对比](opd-qwen/figs/cot_5way_combined.png)
-
-更多图：
-- `opd-qwen/figs/cot_5way_acc.png`（acc 单图）
-- `opd-qwen/figs/cot_5way_format_vs_semantic.png`（`<<eq>>` 率 vs ROUGE-L）
-
-### 3.6 实验产物索引
+### 3.5 实验产物索引
 
 | 类型 | 路径 |
 |---|---|
@@ -128,23 +121,3 @@ n=1319 GSM8K test，full eval；ROUGE-L 参考 **真 Qwen3-8B teacher**。
 | 5-way 出图脚本 | `opd-qwen/src/cot_compare_5way.py` |
 | 完整文档 | `opd-qwen/RESULTS.md`、`opd-qwen/COT_PLAN.md` |
 
-### 3.7 复现步骤（一键到底）
-
-```bash
-cd opd-qwen
-# 1) SFT (baseline 路线)
-bash scripts/40_train_sft_base.sh                # ~1.7 h
-# 2) OPD 主线（max_steps=1000, 取 ckpt-400）
-bash scripts/50_train_opd_base.sh                # ~3.5 h
-# 3) SFT→OPD 两阶段（merge SFT-LoRA 后再跑 OPD）
-python src/merge_lora.py --base models/student-base \
-    --lora runs/sft-qwen3-1.7b-base/final \
-    --out  models/student-base-sft-merged
-bash scripts/52_train_opd_on_sft.sh              # ~3.5 h
-# 4) Full eval (n=1319)
-python src/eval_gsm8k.py --lora runs/opd-on-sft-1.7b-base/checkpoint-400 ...
-# 5) CoT dump + 出图
-python src/dump_cot.py  --tag sft_then_opd ...
-python src/cot_metrics_annotated.py
-python src/cot_compare_5way.py
-```
